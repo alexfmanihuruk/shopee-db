@@ -1,0 +1,17 @@
+version: "2"
+
+services:
+  shopee-db:
+    image: gcr.io/alexfm-2020/shopee-db:latest
+    build:
+      context: .
+      dockerfile: dockerfiles/app.docker
+    env_file: .env
+    container_name: "shopee-db"
+    working_dir: /usr/src
+    volumes:
+      - mysql_data:/var/lib/mysql/
+    ports:
+      - "3306:3306"
+volumes:
+  mysql_data:

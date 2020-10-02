@@ -1,0 +1,85 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: shopee-db
+  name: shopee-db
+spec:
+  type: ClusterIP
+  ports:
+    - name: mysql
+      port: 3306
+      protocol: TCP
+      targetPort: 3306
+  selector:
+    app: shopee-db
+status:
+  loadBalancer: {}
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    app: shopee-db-data
+  name: shopee-db-data
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+status: {}
+
+---
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: shopee-db
+  name: shopee-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shopee-db
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 100%
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      labels:
+        app: shopee-db
+    spec:
+      containers:
+        - image: "gcr.io/alexfm-2020/shopee-db:latest"
+          args:
+            - "--ignore-db-dir=lost+found"
+          imagePullPolicy: IfNotPresent
+          name: shopee-db
+          ports:
+            - containerPort: 3306
+              protocol: TCP
+          envFrom:
+          - secretRef:
+              name: shopee-db-secret 
+          resources: {}
+          volumeMounts:
+          - mountPath: /var/lib/mysql/
+            name: shopee-db-data
+          workingDir: /usr/src/
+      restartPolicy: Always
+      volumes:
+      - name: shopee-db-data
+        persistentVolumeClaim:
+          claimName: shopee-db-data
+status: {}
